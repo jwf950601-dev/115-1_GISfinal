@@ -35,8 +35,45 @@ async function api(path, options) {
   return j;
 }
 
+// ---------- 地址查詢：瀏覽器直接呼叫 Nominatim ----------
+// Render 等雲端主機的 IP 常被 Nominatim 擋，所以不經過後端；地址也因此不會送到本網站的伺服器。
+// 規則同 backend/geocode.py：門牌先拆成「區、路、號」做結構化查詢，找不到退到只查路名，不像地址就當地標查。
+// Nominatim 規定每秒最多 1 次、要快取、不可做自動完成（所以只在按 Enter 時查）。
+const ADDRESS = /(\S+?區)?(\S+?(?:路|街|大道)(?:\S+?段)?(?:\d+巷)?(?:\d+弄)?)(\d+)號/;
+const geoCache = new Map();
+let bbox = null, lastGeo = 0;
+async function nominatim(params) {
+  const wait = 1000 - (Date.now() - lastGeo);
+  if (wait > 0) await new Promise(r => setTimeout(r, wait));
+  lastGeo = Date.now();
+  const u = new URL("https://nominatim.openstreetmap.org/search");
+  const box = bbox ? { viewbox: `${bbox[1]},${bbox[2]},${bbox[3]},${bbox[0]}`, bounded: 1 } : {};   // 只找研究範圍內
+  for (const [k, v] of Object.entries({ format: "jsonv2", limit: 1, countrycodes: "tw", "accept-language": "zh-TW", ...box, ...params })) u.searchParams.set(k, v);
+  const r = await fetch(u);
+  if (!r.ok) throw new Error(`地址查詢服務暫時無法使用（${r.status}），請改在地圖上選點`);
+  return r.json();
+}
+async function geocode(q) {
+  if (geoCache.has(q)) return geoCache.get(q);
+  const m = q.replace(/\s/g, "").match(ADDRESS);
+  let hit = null, level = "place";
+  if (m) {
+    const [, , road, no] = m;
+    [hit] = await nominatim({ street: `${no} ${road}`, city: "臺北市" }); level = "address";
+    if (!hit) { [hit] = await nominatim({ street: road, city: "臺北市" }); level = "road"; }
+    if (!hit && /巷|弄/.test(road)) [hit] = await nominatim({ street: road.replace(/\d+巷.*$/, ""), city: "臺北市" });   // 巷弄找不到就查主要道路
+  }
+  if (!hit) { [hit] = await nominatim({ q }); level = "place"; }
+  if (!hit) throw new Error("研究範圍內找不到這個地址或地標，請換個寫法，或在地圖上選點");
+  const out = { lat: +hit.lat, lon: +hit.lon, level };
+  geoCache.set(q, out);
+  return out;
+}
+
 async function loadStations() {
-  const { stations, bbox } = await api("/api/stations");
+  const d = await api("/api/stations");
+  const stations = d.stations;
+  bbox = d.bbox;
   map.fitBounds([[bbox[0], bbox[1]], [bbox[2], bbox[3]]]);
   for (const s of stations) {
     L.circleMarker([s.lat, s.lon], { radius: 5, color: "#fff", weight: 2, fillColor: css("--ink"), fillOpacity: 1 })
@@ -224,7 +261,9 @@ function bind() {
   for (const inp of document.querySelectorAll("[data-pt]")) inp.addEventListener("keydown", async e => {
     if (e.key !== "Enter") return;
     const k = +inp.dataset.pt, q = inp.value.trim();
-    try { const g = await api(`/api/geocode?q=${encodeURIComponent(q)}`); state.msg = g.level === "road" ? "只定位到路，請在地圖上確認位置。" : ""; setPoint(k, g.lat, g.lon, q); }
+    if (q.length < 2) return;
+    state.msg = "查詢中…"; renderPanel();
+    try { const g = await geocode(q); state.msg = g.level === "road" ? "只定位到路，請在地圖上確認位置。" : ""; setPoint(k, g.lat, g.lon, q); }
     catch (err) { state.msg = err.message; renderPanel(); }
   });
   for (const b of document.querySelectorAll("[data-pick]")) b.addEventListener("click", () => { state.active = +b.dataset.pick; state.msg = "請在地圖上點位置"; renderPanel(); });

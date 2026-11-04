@@ -10,9 +10,9 @@
 
 ```
 使用者 ──► 前端（frontend/，Leaflet + OSM 圖磚）──► 後端 API（backend/，FastAPI，Render）
-                                                  │  ├─ 路徑分析：查最短路徑樹、機車路網 Dijkstra
-                                                  │  ├─ 地理編碼：Nominatim（每秒 1 次、快取）
-                                                  │  └─ 公車到站：按了才查 TDX、快取 60 秒
+            │                                     │  ├─ 路徑分析：查最短路徑樹、機車路網 Dijkstra
+            └─► 地理編碼：瀏覽器直接查 Nominatim   │  └─ 公車到站：按了才查 TDX、快取 60 秒
+                （Render 的 IP 會被擋；每秒 1 次、快取）
                                                   ▼
                        Supabase（PostgreSQL）◄── 抓取程式（fetcher/，GitHub Actions）
                        尖峰快照歷史                 平日尖峰每 15 分鐘：TDX YouBike、氣象署雨量

@@ -2,6 +2,7 @@
 
 本機啟動：uvicorn backend.main:app --reload，然後開 http://127.0.0.1:8000
 """
+import requests
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -35,7 +36,12 @@ def health():
 
 @app.get("/api/geocode")
 def api_geocode(q: str = Query(min_length=2, max_length=100)):
-    hit = geocode.geocode(q.strip())
+    """備用：前端已改成瀏覽器直接查 Nominatim（Render 的 IP 會被擋），這支留給本機測試。"""
+    try:
+        hit = geocode.geocode(q.strip())
+    except requests.RequestException as e:
+        code = getattr(e.response, "status_code", None) or type(e).__name__
+        raise HTTPException(502, f"Nominatim 連線失敗（{code}），請改在地圖上點選位置")
     if hit is None:
         raise HTTPException(404, "找不到這個地址，請改在地圖上點選位置")
     if not routing.in_area(hit["lat"], hit["lon"]):
