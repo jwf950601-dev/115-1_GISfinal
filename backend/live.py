@@ -1,8 +1,8 @@
 """YouBike 即時資料、15 分鐘預估與可靠度。
 
 資料來源的優先順序：
-1. 資料庫（GitHub Actions 尖峰每 15 分鐘寫入）：最新快照、預估與可靠度都由歷史計算。
-2. 沒有資料庫但有 TDX 金鑰：App 自己抓，所有使用者共用 15 分鐘快取。
+1. 資料庫（GitHub Actions 尖峰每 15 分鐘寫入）：最新快照在 20 分鐘內就用它；預估與可靠度都由歷史計算。
+2. 資料庫的快照太舊（離峰、假日）或沒有資料庫，但有 TDX 金鑰：App 自己抓，所有使用者共用 15 分鐘快取。
 3. 兩者都沒有：回傳空的，前端顯示「沒有即時資料」。
 """
 import threading
@@ -13,8 +13,9 @@ from zoneinfo import ZoneInfo
 from . import config, db, tdx
 
 TAIPEI = ZoneInfo("Asia/Taipei")
-_cache = {"data": {}, "time": None, "fetched": 0.0, "source": "none"}
+_cache = {"data": {}, "time": None, "fetched": 0.0, "tdx_at": 0.0, "source": "none", "error": None}
 _lock = threading.Lock()
+DB_FRESH_SEC = 20 * 60     # 資料庫快照超過這個時間就不算即時（排程只在平日尖峰跑）
 
 
 def electric(r):
@@ -44,15 +45,20 @@ def _from_db():
 def latest():
     """回傳 {StationUID: {rent, ret, status, update}}，以及資料時間與來源。"""
     with _lock:
-        if time.time() - _cache["fetched"] < 60 and _cache["data"]:
+        now = time.time()
+        if now - _cache["fetched"] < 60 and _cache["data"]:
             return _cache
+        _cache["fetched"] = now
         try:
             if db.enabled():
                 data, t = _from_db()
-                _cache.update(data=data, time=t, source="database")
-            elif tdx.has_key() and time.time() - _cache["fetched"] > config.LIVE_CACHE_SEC:
-                _cache.update(data=_from_tdx(), time=datetime.now(TAIPEI).isoformat(), source="tdx")
-            _cache["fetched"] = time.time()
+                if t and now - datetime.fromisoformat(t).timestamp() < DB_FRESH_SEC:
+                    _cache.update(data=data, time=t, source="database", error=None)
+                    return _cache
+            # TDX 的快取另外計時：手上已經是 15 分鐘內抓的 TDX 資料就不再呼叫
+            if tdx.has_key() and (_cache["source"] != "tdx" or now - _cache["tdx_at"] > config.LIVE_CACHE_SEC):
+                _cache.update(data=_from_tdx(), time=datetime.now(TAIPEI).isoformat(), source="tdx",
+                              tdx_at=now, error=None)
         except Exception as e:                       # 更新失敗：沿用上一份，並讓前端知道
             _cache["error"] = f"{type(e).__name__}: {e}"
         return _cache

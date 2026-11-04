@@ -32,3 +32,9 @@ create table if not exists api_log (
     n_records  integer,
     bytes      integer                             -- 解壓縮後的大小；gzip 傳輸量約為 1/5
 );
+
+-- 開啟 RLS 且不設任何 policy：Supabase 公開的 Data API（anon key）讀寫不到這些表。
+-- 網站和排程用 DATABASE_URL 以 postgres 身分直接連線，不受 RLS 限制。
+alter table bike_snapshot enable row level security;
+alter table rain_snapshot enable row level security;
+alter table api_log       enable row level security;
