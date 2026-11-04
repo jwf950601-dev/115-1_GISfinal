@@ -1,0 +1,27 @@
+# 金鑰與本機設定（絕對不能上傳）
+.env
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.pytest_cache/
+
+# Jupyter / Colab
+.ipynb_checkpoints/
+
+# 文獻 PDF 有著作權，不上傳；清單見 02_Document/README.md
+02_Document/*.pdf
+
+# 原始資料太大或有授權限制，取得方式見 01_Data/raw/README.md
+01_Data/raw/*
+!01_Data/raw/README.md
+# 前處理的中間檔（可由 preprocess/ 重新產生）
+01_Data/processed/work/
+
+# 編輯器與系統檔
+.vscode/
+.DS_Store
+Thumbs.db
+desktop.ini

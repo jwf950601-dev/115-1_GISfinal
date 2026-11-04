@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Last Mile 綠行臺北</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="wrap">
+    <header class="top">
+      <div>
+        <h1>Last Mile 綠行臺北</h1>
+        <p class="lead">設定出發地、目的地與中繼站，看大眾運輸怎麼走：首段、搭軌道、末段各花多久，YouBike 此刻借不借得到、還不還得了，以及整趟跟騎機車差多少。</p>
+      </div>
+      <p class="status small" id="status">讀取中…</p>
+    </header>
+
+    <div class="main">
+      <div class="side">
+        <div class="tabs" role="tablist" aria-label="功能">
+          <button role="tab" aria-selected="true" data-mode="trip">行程比較</button>
+          <button role="tab" aria-selected="false" data-mode="add">增設 YouBike 站</button>
+        </div>
+        <div id="panel" class="side"></div>
+      </div>
+      <div class="mapbox">
+        <div id="map" role="region" aria-label="地圖"></div>
+      </div>
+    </div>
+
+    <footer class="method">
+      <p><b>資料：</b>TDX 運輸資料流通服務（YouBike 即時車位、軌道車站、公車預估到站）、中央氣象署（雨量）、OpenStreetMap（路網、地址查詢，© OpenStreetMap contributors）、內政部戶政司。</p>
+      <p><b>方法：</b>步行與 YouBike 路線查預先算好的最短路徑樹；機車在 OSM 路網上即時計算，速度依道路等級假設，另加停車 3 分鐘。軌道車上時間目前為估計值。你輸入的地址只用來計算，不會被儲存。</p>
+      <p><b>慢行與安全：</b>人行道、自行車道取自 OSM；路線每 10 公尺取樣，離設施 12 公尺內算「走在設施上」。事故為內政部警政署 113 年 A1、A2 傷亡事故，計算路線 30 公尺內涉及行人（走路段）或自行車（騎車段）的案件。碳排（g CO₂e／人公里）：捷運 75（臺北捷運碳足跡）、臺鐵 55（區間車）、機車 164、公車 85（運研所 2014 臺北市實測，公車以 17 人乘載計）、高鐵 29（台灣高鐵碳足跡標籤，114 年）。捷運、臺鐵、高鐵含生命週期、機車只算排氣管，所以「少排」是保守估計。</p>
+    </footer>
+  </div>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

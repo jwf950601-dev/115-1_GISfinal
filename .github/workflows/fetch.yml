@@ -1,0 +1,29 @@
+# 平日尖峰（臺灣時間 07:00–10:00、17:00–20:00）每 15 分鐘抓一次 YouBike 與雨量，寫進 Supabase。
+# GitHub 的排程是 UTC，臺灣時間要減 8 小時；排程可能延遲幾分鐘，資料時間以寫入的 fetched_at 為準。
+# 每月約 6 小時 × 4 次 × 22 個平日 ≈ 528 次（TDX 基礎服務每 1,500 次扣 1 點，資料量另計）。
+name: fetch-snapshot
+
+on:
+  schedule:
+    - cron: "*/15 23 * * 0-4"     # 臺灣 07:00–07:45（週一到週五）
+    - cron: "*/15 0,1 * * 1-5"    # 臺灣 08:00–09:45
+    - cron: "*/15 9-11 * * 1-5"   # 臺灣 17:00–19:45
+  workflow_dispatch: {}            # 也可以在 Actions 頁面手動執行一次
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install requests psycopg[binary] python-dotenv
+      - run: python -m fetcher.fetch_snapshot
+        env:
+          TDX_CLIENT_ID: ${{ secrets.TDX_CLIENT_ID }}
+          TDX_CLIENT_SECRET: ${{ secrets.TDX_CLIENT_SECRET }}
+          CWA_API_KEY: ${{ secrets.CWA_API_KEY }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
