@@ -24,11 +24,6 @@ class TripRequest(BaseModel):
     rain: bool | None = None                                  # None＝依即時雨量自動判斷
 
 
-class WhatIfRequest(BaseModel):
-    lat: float
-    lon: float
-
-
 @app.get("/api/health")
 def health():
     return {"ok": True, "tdx_key": tdx.has_key(), "database": bool(config.DATABASE_URL), "cwa_key": bool(config.CWA_API_KEY)}
@@ -82,13 +77,6 @@ def api_bus_eta(stop_uid: str = Query(min_length=3, max_length=40)):
     if not tdx.has_key():
         raise HTTPException(503, "伺服器沒有設定 TDX 金鑰")
     return bus.eta(stop_uid)
-
-
-@app.post("/api/what-if")
-def api_what_if(req: WhatIfRequest):
-    if not routing.in_area(req.lat, req.lon):
-        raise HTTPException(422, "這個位置不在研究範圍內")
-    return routing.what_if(req.lat, req.lon)
 
 
 @app.get("/api/stations")

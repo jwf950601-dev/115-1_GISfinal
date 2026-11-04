@@ -4,7 +4,7 @@ const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).
 const NAME = { walk: "走路", bike: "YouBike", bus: "公車" };
 const WALK = 80;   // 公尺／分鐘，和後端 config 一致
 
-const state = { mode: "trip", pts: [null, null], active: 0, choices: {}, trip: null, msg: "", busy: false, whatif: null };
+const state = { pts: [null, null], active: 0, choices: {}, trip: null, msg: "", busy: false };
 
 // ---------- 地圖 ----------
 const map = L.map("map", { zoomControl: true }).setView([25.045, 121.54], 13);
@@ -187,28 +187,11 @@ function carbonText(c) {
     <span class="muted">（保守估計：捷運含生命週期，機車只算排氣管${c.draft.length ? `；${c.draft.join("、")}為暫定係數` : ""}）</span></p>`;
 }
 
-// ---------- 增設 YouBike 站 ----------
-function whatIfPanel() {
-  const a = state.whatif;
-  let h = `<section class="card"><h2>在地圖上點一個位置</h2><p class="small muted">假設在那裡新增一個 YouBike 站，計算周邊 500 公尺內有多少路口往返軌道車站的時間變短。</p></section>`;
-  if (!a) return h;
-  if (a.error) return h + `<section class="card"><p>${a.error}</p></section>`;
-  return h + `<section class="card"><div class="kpis">
-    <div class="kpi"><span class="v num">${a.improved}</span><span class="k">時間變短的路口</span></div>
-    <div class="kpi"><span class="v num">${a.under_threshold}</span><span class="k">因此變成 20 分鐘內可到車站</span></div>
-    <div class="kpi"><span class="v num">${a.saved_avg.toFixed(1)}</span><span class="k">平均省下（分鐘）</span></div>
-    <div class="kpi"><span class="v">${a.station}</span><span class="k">從這個車站騎過來</span></div></div></section>`;
-}
-
 // ---------- 畫面 ----------
 function renderPanel() {
-  let h = "";
-  if (state.mode === "add") h = whatIfPanel();
-  else {
-    h = pointsCard();
-    const t = state.trip;
-    if (t) h += (t.legs.every(l => !l.error) ? summaryCard(t) : "") + t.legs.map(l => legCard(l, t.legs.length)).join("");
-  }
+  let h = pointsCard();
+  const t = state.trip;
+  if (t) h += (t.legs.every(l => !l.error) ? summaryCard(t) : "") + t.legs.map(l => legCard(l, t.legs.length)).join("");
   $("panel").innerHTML = h;
   bind();
 }
@@ -221,7 +204,7 @@ function drawMap() {
     if (m.mode === "bike") { L.polyline(m.pts, { color: css("--bike"), weight: 6 }).addTo(layer); badge(m.borrow, "借", m.borrow.rent); badge(m.give, "還", m.give.ret); }
     if (m.mode === "bus") L.polyline([[m.board.lat, m.board.lon], [m.alight.lat, m.alight.lon]], { color: css("--bus"), weight: 5, dashArray: "10 6" }).addTo(layer);
   };
-  if (state.mode === "trip" && state.trip) for (const l of state.trip.legs) {
+  if (state.trip) for (const l of state.trip.legs) {
     if (l.moto) L.polyline(l.moto.path, { color: css("--moto"), weight: 3, opacity: 0.85 }).addTo(layer);
     if (l.error) continue;
     if (l.direct) { L.polyline([[l.from.lat, l.from.lon], [l.to.lat, l.to.lon]], dot).addTo(layer); continue; }
@@ -230,7 +213,6 @@ function drawMap() {
   state.pts.forEach((p, k) => p && L.marker([p.lat, p.lon], { icon: L.divIcon({ className: "pt-icon", iconSize: [0, 0], html: `<span class="pin ${role(k)}">${pin(k)}</span>` }) }).bindTooltip(p.label).addTo(layer));
 }
 function render() {
-  for (const b of document.querySelectorAll(".tabs button")) b.setAttribute("aria-selected", String(b.dataset.mode === state.mode));
   renderPanel(); drawMap();
   const m = state.trip && state.trip.meta;
   $("status").textContent = m ? `${m.rain ? "下雨中" : "沒有下雨"} · 即時資料 ${m.live_time ? m.live_time.slice(11, 16) : "沒有"}（${m.live_source}）` : "";
@@ -278,15 +260,7 @@ function bind() {
   });
 }
 
-for (const b of document.querySelectorAll(".tabs button")) b.addEventListener("click", () => { state.mode = b.dataset.mode; render(); });
-map.on("click", async e => {
-  const { lat, lng } = e.latlng;
-  if (state.mode === "trip") return setPoint(state.active, lat, lng, "");
-  try { state.whatif = await api("/api/what-if", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ lat, lon: lng }) }); }
-  catch (err) { state.whatif = { error: err.message }; }
-  render();
-  L.circle([lat, lng], { radius: 500, color: css("--accent"), weight: 1.5, dashArray: "5 4", fill: false }).addTo(layer);
-});
+map.on("click", e => setPoint(state.active, e.latlng.lat, e.latlng.lng, ""));
 window.addEventListener("resize", () => setRain(!!(state.trip && state.trip.meta.rain)));
 
 loadStations().catch(e => { state.msg = `無法連到後端：${e.message}`; });

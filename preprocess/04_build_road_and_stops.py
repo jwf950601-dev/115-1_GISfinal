@@ -42,7 +42,7 @@ for a, b, sec in road.edges(data="sec"):
     edges += [r_idx[a], r_idx[b], max(1, round(sec * 10))]        # 0.1 秒
 print("機車路網：", len(rn), "節點、", len(edges) // 3, "路段")
 
-# 每個路口目前最快往返車站的時間（走路或 YouBike），給「增設 YouBike 站」比較用
+# 每個路口目前最快往返車站的時間（走路或 YouBike）；網站目前沒用到，留給期末的可及性分析
 N = len(R["lat"])
 node_xy = np.c_[to3826.transform(R["lon"], R["lat"])]
 bikes = R["bikes"]

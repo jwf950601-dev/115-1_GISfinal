@@ -224,31 +224,3 @@ def trip(points, choices=None, rain=False, live=lambda uid: None):
         "carbon": {"transit_g": round(co2), "moto_g": round(moto_co2), "saved_g": round(moto_co2 - co2),
                    "draft": list(config.CARBON_TODO)},
     }
-
-
-# ---------- 增設 YouBike 站的效益 ----------
-def what_if(lat, lon, radius=500, threshold=20):
-    """假設在 (lat, lon) 新增 YouBike 站，周邊路口往返車站的時間改善多少。"""
-    d = data()
-    R, V = d["R"], d["V"]
-    bd = np.array(R["bd"])
-    bike_idx = np.where(bd >= 0)[0]
-    pts = np.c_[np.array(R["lon"])[bike_idx] * KX, np.array(R["lat"])[bike_idx] * KY]
-    dist, k = cKDTree(pts).query(_xy(lat, lon))
-    if dist > 80:
-        return {"error": "這個位置離可騎的道路太遠，請點在道路旁。"}
-    n = int(bike_idx[k])
-    src = R["bikes"][R["bs"][n]]
-    improved = under = 0
-    saved = 0.0
-    for i in d["walk_kd"].query_ball_point(_xy(lat, lon), radius):
-        node = int(d["walk_idx"][i])
-        dd = meters(lat, lon, R["lat"][node], R["lon"][node])
-        t = dd * R["detour"] / WALK + R["bd"][n] / BIKE + src["std"] / WALK + DOCK
-        cur = V["best"][node] / 10 if V["best"][node] >= 0 else math.inf
-        if t < cur - 0.5:
-            improved += 1
-            saved += min(cur, 60) - t
-            under += cur > threshold >= t
-    return {"improved": improved, "under_threshold": int(under), "saved_avg": saved / improved if improved else 0,
-            "station": R["stations"][src["st"]]["name"], "ride": R["bd"][n]}
