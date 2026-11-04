@@ -9,6 +9,7 @@ const state = { pts: [null, null], active: 0, choices: {}, trip: null, msg: "", 
 // ---------- 地圖 ----------
 const map = L.map("map", { zoomControl: true }).setView([25.045, 121.54], 13);
 L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, attribution: "© OpenStreetMap contributors" }).addTo(map);
+const lineLayer = L.layerGroup().addTo(map);       // 捷運路線（在車站點底下）
 const stationLayer = L.layerGroup().addTo(map);
 const layer = L.layerGroup().addTo(map);
 
@@ -75,8 +76,10 @@ async function loadStations() {
   const stations = d.stations;
   bbox = d.bbox;
   map.fitBounds([[bbox[0], bbox[1]], [bbox[2], bbox[3]]]);
+  // 捷運各線用官方路線色；線段是車站之間的直線（示意）
+  for (const l of d.lines || []) L.polyline(l.coords, { color: l.color, weight: 4, opacity: 0.75, interactive: false }).addTo(lineLayer);
   for (const s of stations) {
-    L.circleMarker([s.lat, s.lon], { radius: 5, color: "#fff", weight: 2, fillColor: css("--ink"), fillOpacity: 1 })
+    L.circleMarker([s.lat, s.lon], { radius: 4.5, color: css("--ink"), weight: 2, fillColor: "#fff", fillOpacity: 1 })
       .bindTooltip(`${s.name}（${s.sys.join("、")}）`, { direction: "top" }).addTo(stationLayer);
   }
 }

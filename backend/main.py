@@ -2,6 +2,8 @@
 
 本機啟動：uvicorn backend.main:app --reload，然後開 http://127.0.0.1:8000
 """
+import json
+
 import requests
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.staticfiles import StaticFiles
@@ -82,7 +84,9 @@ def api_bus_eta(stop_uid: str = Query(min_length=3, max_length=40)):
 @app.get("/api/stations")
 def api_stations():
     R = routing.data()["R"]
-    return {"stations": R["stations"], "bbox": R["bbox"]}
+    f = config.APP_DATA / "metro_lines.json"               # 捷運路線（preprocess/07）
+    lines = json.loads(f.read_text(encoding="utf-8")) if f.exists() else []
+    return {"stations": R["stations"], "bbox": R["bbox"], "lines": lines}
 
 
 @app.get("/api/layers")

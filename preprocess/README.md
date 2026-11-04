@@ -14,6 +14,7 @@
 | 4 | `04_build_road_and_stops.py` | 機車路網、每個路口目前最快時間、公車站牌 | `app/v3_data.json` |
 | 5 | `05_build_basemap.py` | 簡化底圖，只給 `prototype/` 的 demo 用 | `work/basemap.json` |
 | 6 | `06_build_slow_and_safety.py` | OSM 人行道與自行車道；事故資料一列一位當事者，合併成一案一點 | `app/safety_data.json` |
+| 7 | `07_build_metro_lines.py` | 捷運各線：同一條線照 StationID 順序連起車站，套官方路線色 | `app/metro_lines.json` |
 
 ```bash
 # 在專案根目錄依序執行（本機或 Colab；Colab 先 !pip install pyproj shapely）
@@ -23,10 +24,13 @@ python preprocess/03_build_trees.py
 python preprocess/04_build_road_and_stops.py
 python preprocess/05_build_basemap.py
 python preprocess/06_build_slow_and_safety.py   # 要先把 172969 事故 ZIP 解壓到 01_Data/raw/crash_113_20261104/unzipped/
+python preprocess/07_build_metro_lines.py
 ```
 
 ## 待改進（正式版）
 
 - 臺北捷運、機場捷運車站目前讀教師備援快照，要改用自己的金鑰重抓。
 - 公車站牌要改用 TDX `/v2/Bus/Stop/City/Taipei`，才有 `StopUID` 可以查預估到站。
-- 用官方標線型人行道（145867）、TDX 自行車道檢查 OSM 慢行路網的完整度。- 自行車路網沒有考慮單行道；機車速度只依道路等級假設，沒有號誌。
+- 用官方標線型人行道（145867）、TDX 自行車道檢查 OSM 慢行路網的完整度。
+- 捷運路線是車站之間的直線（示意）；要畫實際線形可改用 TDX `/v2/Rail/Metro/Shape/TRTC`。
+- 自行車路網沒有考慮單行道；機車速度只依道路等級假設，沒有號誌。
