@@ -200,17 +200,34 @@ function renderPanel() {
 }
 function drawMap() {
   layer.clearLayers();
-  const dot = { color: css("--walk"), weight: 3, dashArray: "2 6" };
+  // 有路線時把捷運線調淡，路線本身加一圈底色外框，兩者才分得開
+  lineLayer.eachLayer(x => x.setStyle({ opacity: state.trip ? 0.3 : 0.75 }));
+  const route = (pts, color, weight, dashArray, opacity = 1) => {
+    L.polyline(pts, { color: css("--surface"), weight: weight + 4, opacity: 0.9, interactive: false }).addTo(layer);
+    L.polyline(pts, { color, weight, dashArray, opacity, interactive: false }).addTo(layer);
+  };
+  const walkLine = pts => route(pts, css("--walk"), 4, "2 7");     // 往返 YouBike 站、公車站的短程步行（直線示意）
+  const ll = p => [p.lat, p.lon];
   const badge = (b, kind, v) => L.marker([b.lat, b.lon], { icon: L.divIcon({ className: "yb-icon", iconSize: [0, 0], html: `<span class="${v ? "" : "zero"}">${kind} ${v ?? "?"}</span>` }) }).addTo(layer);
   const drawMile = m => {
-    if (m.mode === "walk") L.polyline(m.pts, { color: css("--walk"), weight: 5, dashArray: "7 6" }).addTo(layer);
-    if (m.mode === "bike") { L.polyline(m.pts, { color: css("--bike"), weight: 6 }).addTo(layer); badge(m.borrow, "借", m.borrow.rent); badge(m.give, "還", m.give.ret); }
-    if (m.mode === "bus") L.polyline([[m.board.lat, m.board.lon], [m.alight.lat, m.alight.lon]], { color: css("--bus"), weight: 5, dashArray: "10 6" }).addTo(layer);
+    const [from, to] = m.ends || [];
+    if (m.mode === "walk") route(m.pts, css("--walk"), 5, "8 6");
+    if (m.mode === "bike") {
+      if (from) walkLine([from, ll(m.borrow)]);
+      route(m.pts, css("--bike"), 6);
+      if (to) walkLine([ll(m.give), to]);
+      badge(m.borrow, "借", m.borrow.rent); badge(m.give, "還", m.give.ret);
+    }
+    if (m.mode === "bus") {
+      if (from) walkLine([from, ll(m.board)]);
+      route([ll(m.board), ll(m.alight)], css("--bus"), 5, "10 6");
+      if (to) walkLine([ll(m.alight), to]);
+    }
   };
   if (state.trip) for (const l of state.trip.legs) {
-    if (l.moto) L.polyline(l.moto.path, { color: css("--moto"), weight: 3, opacity: 0.85 }).addTo(layer);
+    if (l.moto) route(l.moto.path, css("--moto"), 3, "1 6", 0.9);
     if (l.error) continue;
-    if (l.direct) { L.polyline([[l.from.lat, l.from.lon], [l.to.lat, l.to.lon]], dot).addTo(layer); continue; }
+    if (l.direct) { walkLine([ll(l.from), ll(l.to)]); continue; }
     drawMile(l.first); drawMile(l.last);
   }
   state.pts.forEach((p, k) => p && L.marker([p.lat, p.lon], { icon: L.divIcon({ className: "pt-icon", iconSize: [0, 0], html: `<span class="pin ${role(k)}">${pin(k)}</span>` }) }).bindTooltip(p.label).addTo(layer));

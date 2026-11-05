@@ -1,7 +1,7 @@
 /* 版面：標題 → 左側分頁、右側地圖 → 方法說明 */
 :root {
   --bg: #f3f6f6; --surface: #ffffff; --ink: #14232b; --muted: #5a6a72; --line: #d5dde0;
-  --accent: #1c6c8a; --accent-soft: #e2eff4; --walk: #1c6c8a; --bike: #2c8a73; --bus: #7a4fa3; --moto: #d9822b;
+  --accent: #1c6c8a; --accent-soft: #e2eff4; --walk: #d81b7a; --bike: #0099b8; --bus: #5f6f80; --moto: #2e3740;  /* 路線色避開捷運各線（棕紅綠黃藍紫） */
   --short: #c63f4e; --full: #b98204; --ok: #2c8a73; --rain: #3b6fb6; --rain-soft: #e3ecf8;
   --bg-rain: #e4eaf0; --rain-tint: rgba(58, 86, 124, 0.14); --drop: rgba(70, 105, 150, 0.55);
   --font-body: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
@@ -10,7 +10,7 @@
 @media (prefers-color-scheme: dark) {
   :root {
     --bg: #0e161a; --surface: #152027; --ink: #e2ebee; --muted: #93a3aa; --line: #283841;
-    --accent: #62b4d2; --accent-soft: #19323d; --walk: #62b4d2; --bike: #4dbf9f; --bus: #b48be0; --moto: #e8a35a;
+    --accent: #62b4d2; --accent-soft: #19323d; --walk: #ff6cb2; --bike: #3fd0e6; --bus: #9aa8b8; --moto: #d5dce2;
     --short: #ee6c79; --full: #e3ad2b; --ok: #4dbf9f; --rain: #7aa7e8; --rain-soft: #1a2a40;
     --bg-rain: #0a1219; --rain-tint: rgba(10, 25, 50, 0.32); --drop: rgba(150, 185, 230, 0.45);
     color-scheme: dark;

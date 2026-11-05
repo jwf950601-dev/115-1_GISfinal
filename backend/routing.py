@@ -205,6 +205,9 @@ def trip(points, choices=None, rain=False, live=lambda uid: None):
         A, B = R["stations"][pa[ca]["station"]], R["stations"][pb[cb]["station"]]
         direct = meters(a["lat"], a["lon"], b["lat"], b["lon"]) * R["detour"]
         first, last = _mile(pa, ca, "first", live), _mile(pb, cb, "last", live)
+        # 每段首末哩的兩端（起點→車站、車站→終點）：前端用來畫往返 YouBike 站或公車站的步行
+        first["ends"] = [[a["lat"], a["lon"]], [A["lat"], A["lon"]]]
+        last["ends"] = [[B["lat"], B["lon"]], [b["lat"], b["lon"]]]
         rail = None if A is B else rail_leg(A, B)
         mile = first["mins"] + last["mins"]
         moto_co2 = leg["moto"]["km"] * config.CARBON_G_PER_KM["機車"] if leg["moto"] else 0
